@@ -63,7 +63,7 @@ public class GameSession {
 		while (attacking) {
 			final Map<String, Territory> usableTerritories = 
 					this.gameBoard.getUsableTerritories(player);
-			final String attackingTerritoryName = readTerritory(
+			final String attackingTerritoryName = readOption(
 					"%s, select a territory from which to attack (type 'done' to end attack phase): ", 
 					"Please select a territory or type 'done'...", 
 					usableTerritories, player, true);
@@ -73,7 +73,7 @@ public class GameSession {
 				final Territory attackingTerritory = usableTerritories.get(attackingTerritoryName);
 				final Map<String,Territory> attackableTerritories = 
 						attackingTerritory.getAttackableTerritories();
-				final String defendingTerritoryName = readTerritory(
+				final String defendingTerritoryName = readOption(
 						"%s, select a territory to attack (type 'done' to cancel the attack): ", 
 						"Please select a territory or type 'done'...", 
 						attackableTerritories, player, true);
@@ -250,7 +250,7 @@ public class GameSession {
 		while (fortifying) {
 			final Map<String, Territory> usableTerritories = 
 					this.gameBoard.getUsableTerritories(player);
-			final String sourceTerritoryName = readTerritory(
+			final String sourceTerritoryName = readOption(
 					"%s, select a territory from which to fortify (type 'done' to skip fortification): ", 
 					"Please select a territory or type 'done'...", 
 					usableTerritories, player, true);
@@ -260,7 +260,7 @@ public class GameSession {
 				final Territory sourceTerritory = usableTerritories.get(sourceTerritoryName);
 				final Map<String, Territory> fortifiableTerritories = 
 						sourceTerritory.getFortifiableTerritories();
-				final String targetTerritoryName = readTerritory(
+				final String targetTerritoryName = readOption(
 						"%s, select a territory to fortify (type 'done' to cancel this fortification action): ", 
 						"Please select a territory or type 'done'...", 
 						fortifiableTerritories, player, true);
@@ -340,7 +340,7 @@ public class GameSession {
 				} else {
 					prompt += "): ";
 				}
-				final String indexStr = readMap(prompt, "Please select a set number...", 
+				final String indexStr = readOption(prompt, "Please select a set number...", 
 						cardMap, player, allowDone);
 				if (indexStr == null) {
 					doneWithCards = true;
@@ -366,7 +366,7 @@ public class GameSession {
 				new TreeMap<String,Territory>(this.gameBoard.getAllTerritories());
 		while (!freeTeritories.isEmpty()) {
 			for (final Player player : this.players) {
-				final String territoryName = readTerritory(
+				final String territoryName = readOption(
 						"%s, choose a territory to occupy (press enter to list): ", 
 						"Please select a free territory...", freeTeritories, player, false);
 				final Territory territory = freeTeritories.remove(territoryName);
@@ -401,7 +401,7 @@ public class GameSession {
 				player.getName(), player.getNumArmiesInHand());
 		final Territory territory;
 		if (occupiedTeritories.size() > 1) {
-			final String territoryName = readTerritory(
+			final String territoryName = readOption(
 					"%s, choose an occupied territory to reinforce (press enter to list): ", 
 					"Please select an occupied territory...", occupiedTeritories, player, false);
 			territory = occupiedTeritories.get(territoryName);
@@ -423,13 +423,8 @@ public class GameSession {
 		player.setNumArmiesInHand(player.getNumArmiesInHand() - numReinforcements);
 	}
 
-	private static String readTerritory(final String prompt, final String failMsg, 
-			final Map<String, Territory> teritories, final Player player, final boolean allowDone) {
-		return readMap(prompt, failMsg, teritories, player, allowDone);
-	}
-
-	private static <V> String readMap(final String prompt, final String failMsg, 
-			final Map<String, V> map, final Player player, final boolean allowDone) {
+	private static <V> String readOption(final String prompt, final String failMsg, 
+			final Map<String, V> optionsMap, final Player player, final boolean allowDone) {
 		String keyVal = null;
 		while (keyVal == null) {
 			keyVal = readLine(prompt, player.getName());
@@ -437,9 +432,9 @@ public class GameSession {
 				keyVal = null;
 				break;
 			}
-			if (keyVal == null || !map.containsKey(keyVal)) {
+			if (keyVal == null || !optionsMap.containsKey(keyVal)) {
 				println(failMsg);
-				for (final V value : map.values()) {
+				for (final V value : optionsMap.values()) {
 					printf("\t%s%n", value);
 				}
 				keyVal = null;
