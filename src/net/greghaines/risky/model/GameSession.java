@@ -5,6 +5,7 @@ import static net.greghaines.risky.utils.IOUtils.printf;
 import static net.greghaines.risky.utils.IOUtils.println;
 import static net.greghaines.risky.utils.IOUtils.readInteger;
 import static net.greghaines.risky.utils.IOUtils.readLine;
+import static net.greghaines.risky.utils.IOUtils.readOption;
 import static net.greghaines.risky.utils.IOUtils.readYesNo;
 import static net.greghaines.risky.utils.IOUtils.sprintf;
 
@@ -63,23 +64,20 @@ public class GameSession {
 		while (attacking) {
 			final Map<String, Territory> usableTerritories = 
 					this.gameBoard.getUsableTerritories(player);
-			final String attackingTerritoryName = readOption(
-					"%s, select a territory from which to attack (type 'done' to end attack phase): ", 
+			final Territory attackingTerritory = readOption(
+					player.getName() + ", select a territory from which to attack (type 'done' to end attack phase):", 
 					"Please select a territory or type 'done'...", 
-					usableTerritories, player, true);
-			if (attackingTerritoryName == null) {
+					usableTerritories, true);
+			if (attackingTerritory == null) {
 				attacking = false;
 			} else {
-				final Territory attackingTerritory = usableTerritories.get(attackingTerritoryName);
 				final Map<String,Territory> attackableTerritories = 
 						attackingTerritory.getAttackableTerritories();
-				final String defendingTerritoryName = readOption(
-						"%s, select a territory to attack (type 'done' to cancel the attack): ", 
+				final Territory defendingTerritory = readOption(
+						player.getName() + ", select a territory to attack (type 'done' to cancel the attack):", 
 						"Please select a territory or type 'done'...", 
-						attackableTerritories, player, true);
-				if (defendingTerritoryName != null) {
-					final Territory defendingTerritory = 
-							attackableTerritories.get(defendingTerritoryName);
+						attackableTerritories, true);
+				if (defendingTerritory != null) {
 					capturedAtLeastOneTerritory |= doAttacks(attackingTerritory, defendingTerritory);
 					attacking = !checkForVictory();
 				} // Else, cancel this attack and continue the loop
@@ -134,7 +132,7 @@ public class GameSession {
 						sprintf("%s, how many armies do you wish to defend with?", attackInfo.getDefendingPlayer().getName()),
 						1, Math.min(2, defendingTerritory.getArmySize()));
 			} else {
-				printf("%s, is defending with their sole army", attackInfo.getDefendingPlayer().getName());
+				printf("%s, is defending with their sole army%n", attackInfo.getDefendingPlayer().getName());
 				numDefendingArmies = defendingTerritory.getArmySize();
 			}
 			attackInfo.setNumDefendingArmies(numDefendingArmies);
@@ -250,22 +248,20 @@ public class GameSession {
 		while (fortifying) {
 			final Map<String, Territory> usableTerritories = 
 					this.gameBoard.getUsableTerritories(player);
-			final String sourceTerritoryName = readOption(
-					"%s, select a territory from which to fortify (type 'done' to skip fortification): ", 
+			final Territory sourceTerritory = readOption(
+					player.getName() + ", select a territory from which to fortify (type 'done' to skip fortification):", 
 					"Please select a territory or type 'done'...", 
-					usableTerritories, player, true);
-			if (sourceTerritoryName == null) {
+					usableTerritories, true);
+			if (sourceTerritory == null) {
 				fortifying = false;
 			} else {
-				final Territory sourceTerritory = usableTerritories.get(sourceTerritoryName);
 				final Map<String, Territory> fortifiableTerritories = 
 						sourceTerritory.getFortifiableTerritories();
-				final String targetTerritoryName = readOption(
-						"%s, select a territory to fortify (type 'done' to cancel this fortification action): ", 
+				final Territory targetTerritory = readOption(
+						player.getName() + ", select a territory to fortify (type 'done' to cancel this fortification action):", 
 						"Please select a territory or type 'done'...", 
-						fortifiableTerritories, player, true);
-				if (targetTerritoryName != null) {
-					final Territory targetTerritory = fortifiableTerritories.get(targetTerritoryName);
+						fortifiableTerritories, true);
+				if (targetTerritory != null) {
 					final int numArmies;
 					if (sourceTerritory.getArmySize() == 2) {
 						numArmies = 1;
@@ -331,21 +327,14 @@ public class GameSession {
 						"beyond those you receive for the matched sets of cards you trade in.");
 				final Map<String, Set<Card>> cardMap = new LinkedHashMap<String, Set<Card>>();
 				for (int i = 0; i < cardSets.size(); i++) {
-					cardMap.put(Integer.toString(i), cardSets.get(i));
+					cardMap.put(cardSets.get(i).toString(), cardSets.get(i));
 				}
 				final boolean allowDone = (player.getNumCards() < 5);
-				String prompt = "%s, select a set to turn in (press enter to list";
-				if (allowDone) {
-					prompt += " or type 'done' to skip): ";
-				} else {
-					prompt += "): ";
-				}
-				final String indexStr = readOption(prompt, "Please select a set number...", 
-						cardMap, player, allowDone);
-				if (indexStr == null) {
+				final Set<Card> cardSet = readOption(player.getName() + ", select a set to turn in:", 
+						"Please select a set number...", cardMap, allowDone);
+				if (cardSet == null) {
 					doneWithCards = true;
 				} else {
-					final Set<Card> cardSet = cardMap.get(indexStr);
 					player.removeCardSet(cardSet);
 					final int setArmies = this.gameBoard.tradeInCardSet(cardSet);
 					printf("%s received %d armies for turning in a card set.%n", player.getName(), setArmies);
@@ -366,10 +355,10 @@ public class GameSession {
 				new TreeMap<String,Territory>(this.gameBoard.getAllTerritories());
 		while (!freeTeritories.isEmpty()) {
 			for (final Player player : this.players) {
-				final String territoryName = readOption(
-						"%s, choose a territory to occupy (press enter to list): ", 
-						"Please select a free territory...", freeTeritories, player, false);
-				final Territory territory = freeTeritories.remove(territoryName);
+				final Territory territory = readOption(
+						player.getName() + ", choose a territory to occupy:", 
+						"Please select a free territory...", freeTeritories, false);
+				freeTeritories.remove(territory.getName());
 				territory.setArmySize(1);
 				territory.setOwner(player);
 				player.setNumArmiesInHand(player.getNumArmiesInHand() - 1);
@@ -401,10 +390,9 @@ public class GameSession {
 				player.getName(), player.getNumArmiesInHand());
 		final Territory territory;
 		if (occupiedTeritories.size() > 1) {
-			final String territoryName = readOption(
-					"%s, choose an occupied territory to reinforce (press enter to list): ", 
-					"Please select an occupied territory...", occupiedTeritories, player, false);
-			territory = occupiedTeritories.get(territoryName);
+			territory = readOption(
+					player.getName() + ", choose an occupied territory to reinforce:", 
+					"Please select an occupied territory...", occupiedTeritories, false);
 		} else {
 			territory = occupiedTeritories.values().iterator().next();
 			printf("%s, has reinforced %s with %d armies.%n", 
@@ -423,28 +411,8 @@ public class GameSession {
 		player.setNumArmiesInHand(player.getNumArmiesInHand() - numReinforcements);
 	}
 
-	private static <V> String readOption(final String prompt, final String failMsg, 
-			final Map<String, V> optionsMap, final Player player, final boolean allowDone) {
-		String keyVal = null;
-		while (keyVal == null) {
-			keyVal = readLine(prompt, player.getName());
-			if (allowDone && "done".equalsIgnoreCase(keyVal)) {
-				keyVal = null;
-				break;
-			}
-			if (keyVal == null || !optionsMap.containsKey(keyVal)) {
-				println(failMsg);
-				for (final V value : optionsMap.values()) {
-					printf("\t%s%n", value);
-				}
-				keyVal = null;
-			}
-		}
-		return keyVal;
-	}
-
 	private static List<Player> readPlayers() {
-		final int numPlayers = readNumPlayers();
+		final int numPlayers = readInteger("Enter number of players", 3, 6);
 		final List<Player> players = new ArrayList<Player>(numPlayers);
 		for (int i = 0; i < numPlayers; i++) {
 			final String playerName = readLine("Player %d's name: ", i + 1);
@@ -456,30 +424,12 @@ public class GameSession {
 		buf.append("Welcome ");
 		String prefix = "";
 		for (int i = 0 ; i < numPlayers; i++) {
-			final Player player = players.get(i);
-			buf.append(prefix).append(player.getName());
+			buf.append(prefix).append(players.get(i).getName());
 			prefix = (i == (numPlayers - 2)) ? " and " : ", ";
 		}
 		buf.append("!");
 		println(buf.toString());
 		return players;
-	}
-
-	private static Integer readNumPlayers() {
-		Integer numPlayers = null;
-		while (numPlayers == null) {
-			final String playerStr = readLine("Enter number of players (3-6): ");
-			try {
-				numPlayers = Integer.valueOf(playerStr);
-				if (numPlayers == null || numPlayers < 3 || numPlayers > 6) {
-					println("Please enter a number from 3 to 6, inclusive...");
-					numPlayers = null;
-				}
-			} catch (NumberFormatException nfe) {
-				println("Bad number");
-			}
-		}
-		return numPlayers;
 	}
 	
 	private static class AttackInfo {

@@ -4,6 +4,10 @@ import java.io.BufferedReader;
 import java.io.Console;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Utility methods for reading from and writing to the terminal.
@@ -16,20 +20,37 @@ public final class IOUtils {
 	 * @param prompt the question prompt
 	 * @param min the minimum value to accept
 	 * @param max the maximum value to accept
-	 * @return a valid integer
+	 * @return a valid integer, never null
 	 */
 	public static Integer readInteger(final String prompt, final int min, final int max) {
+		return readInteger(prompt, min, max, null);
+	}
+
+	/**
+	 * Prints the prompt and then reads an integer from the terminal in the range of min to max, inclusive.
+	 * @param prompt the question prompt
+	 * @param min the minimum value to accept
+	 * @param max the maximum value to accept
+	 * @param exitString option that will allow the result to be null (e.g.: 'x' to exit)
+	 * @return a valid integer or null if exitString is not null and the user chose that option
+	 */
+	public static Integer readInteger(final String prompt, final int min, final int max, final String exitString) {
 		if (min > max) {
 			throw new IllegalArgumentException("min should not be greater than max (min=" + 
 						min + ",max=" + max + ")");
 		}
 		Integer val = null;
 		while (val == null) {
-			final String valStr = readLine("%s (%d-%d): ", prompt, min, max);
+			final String valStr = (exitString == null) 
+				? readLine("%s (%d-%d): ", prompt, min, max)
+				: readLine("%s (%d-%d) or '%s' to exit", prompt, min, max, exitString);
 			try {
+				if (exitString != null && exitString.equals(valStr)) {
+					break;
+				}
 				val = Integer.valueOf(valStr);
 				if (val == null || val < min || val > max) {
-					printf("Please enter number greater than %d and less than %d...%n", min, max);
+					printf("Please enter number greater than or equal to %d and less than or equal to %d...%n", min, max);
 					val = null;
 				}
 			} catch (NumberFormatException nfe) {
@@ -56,7 +77,6 @@ public final class IOUtils {
 		}
 		return val;
 	}
-
 
 	/**
 	 * Returns a formatted string using the specified format string and arguments.
@@ -118,6 +138,56 @@ public final class IOUtils {
 			line = console.readLine(prompt, args);
 		}
 		return line;
+	}
+
+	/**
+	 * Prompt the user to select an option.
+	 * @param prompt the prompt message
+	 * @param failMsg the message to show if bad input is received
+	 * @param optionsMap the options to choose from; keys are shown as the options, selected value is returned
+	 * @param allowDone whether the use must select an option or may exit
+	 * @return the selected value or null if allowDone is true and the user selected to exit
+	 */
+	public static <V> V readOption(final String prompt, final String failMsg, 
+			final Map<String, V> optionsMap, final boolean allowDone) {
+		if (!allowDone && optionsMap.isEmpty()) {
+			throw new IllegalArgumentException("Must have at least one option if allowDone is false");
+		}
+		V selection = null;
+		if (!optionsMap.isEmpty()) {
+			final List<Entry<String, V>> options = new ArrayList<Entry<String, V>>(optionsMap.entrySet());
+			if (!allowDone && options.size() == 1) {
+				selection = options.get(0).getValue();
+			} else {
+				final String exitString = (allowDone) ? "done" : null;
+				final int min = 1;
+				final int max = options.size();
+				Integer val = null;
+				while (val == null) {
+					println(prompt);
+					for (int i = 0; i < options.size(); i++) {
+						printf("\t%d) %s%n", i + 1, options.get(i).getKey());
+					}
+					final String valStr = (exitString == null) 
+						? readLine("Select (%d-%d): ", min, max)
+						: readLine("Select (%d-%d) or '%s' to cancel: ", min, max, exitString);
+					try {
+						if (exitString != null && exitString.equals(valStr)) {
+							break;
+						}
+						val = Integer.valueOf(valStr);
+						if (val == null || val < min || val > max) {
+							println(failMsg);
+							val = null;
+						}
+					} catch (NumberFormatException nfe) {
+						println("Bad number");
+					}
+				}
+				selection = (val == null) ? null : options.get(val - 1).getValue();
+			}
+		}
+		return selection;
 	}
 
 	private IOUtils(){
